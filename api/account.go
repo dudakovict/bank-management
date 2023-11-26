@@ -1,14 +1,11 @@
 package api
 
 import (
-	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 
 	db "github.com/dudakovict/simplebank/db/sqlc"
 	"github.com/dudakovict/simplebank/token"
-	"github.com/lib/pq"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,12 +30,10 @@ func (s *Server) createAccount(ctx *gin.Context) {
 
 	account, err := s.store.CreateAccount(ctx, arg)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok {
-			switch pqErr.Code.Name() {
-			case "foreign_key_violation", "unique_violation":
-				ctx.JSON(http.StatusForbidden, errorResponse(err))
-				return
-			}
+		errCode := db.ErrorCode(err)
+		if errCode == db.ForeignKeyViolation || errCode == db.UniqueViolation {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -60,7 +55,7 @@ func (s *Server) getAccount(ctx *gin.Context) {
 
 	account, err := s.store.GetAccount(ctx, req.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
@@ -139,7 +134,6 @@ func (s *Server) updateAccount(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		fmt.Println("TEST")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -151,7 +145,6 @@ func (s *Server) updateAccount(ctx *gin.Context) {
 
 	account, err := s.store.UpdateAccount(ctx, arg)
 	if err != nil {
-		fmt.Println("TEST2")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
