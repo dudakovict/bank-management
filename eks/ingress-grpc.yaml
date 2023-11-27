@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: simple-bank-ingress-grpc
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: "a078990b3c4d94f128da3cc0ef9ceafe-4b39ca7cf70699c6.elb.eu-west-1.amazonaws.com"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: simple-bank-gapi-service
+            port:
+              number: 90
+  tls:
+  - hosts:
+    - a078990b3c4d94f128da3cc0ef9ceafe-4b39ca7cf70699c6.elb.eu-west-1.amazonaws.com
+    secretName: simple-bank-gapi-cert
